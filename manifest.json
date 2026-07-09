@@ -1,0 +1,70 @@
+{
+  "id": "mysql",
+  "name": "MySQL / MariaDB",
+  "version": "1.0.0",
+  "description": "Consulta de solo lectura a bases de datos MySQL o MariaDB: tablas, datos, estadísticas y planes de ejecución",
+  "category": "database",
+  "library": {
+    "package": "ruvic-mysql-connector",
+    "install": "pip install git+https://github.com/Dgirto/conector-mysql.git#subdirectory=lib",
+    "import_name": "ruvic_mysql_connector"
+  },
+  "auth_modes": [
+    {
+      "id": "user_password",
+      "label": "Usuario y contraseña",
+      "fields": [
+        {
+          "key": "host",
+          "label": "Host",
+          "type": "text",
+          "required": true,
+          "placeholder": "db.empresa.com",
+          "help_text": "Hostname o IP del servidor MySQL/MariaDB"
+        },
+        {
+          "key": "port",
+          "label": "Puerto",
+          "type": "number",
+          "required": true,
+          "default": "3306"
+        },
+        {
+          "key": "database",
+          "label": "Base de datos",
+          "type": "text",
+          "required": true,
+          "placeholder": "produccion"
+        },
+        {
+          "key": "username",
+          "label": "Usuario",
+          "type": "text",
+          "required": true,
+          "help_text": "Se recomienda un usuario de solo lectura"
+        },
+        {
+          "key": "password",
+          "label": "Contraseña",
+          "type": "password",
+          "secret": true,
+          "required": true
+        },
+        {
+          "key": "connect_timeout",
+          "label": "Timeout de conexión (segundos)",
+          "type": "number",
+          "required": false,
+          "default": "10"
+        }
+      ]
+    }
+  ],
+  "env_prefix": "RUVIC_MYSQL_",
+  "operations": ["db.list_tables", "db.read", "db.stats", "db.explain"],
+  "test_connection": true,
+  "docs": {
+    "skill": "SKILL.md",
+    "permissions_note": "El usuario de base de datos necesita permiso SELECT sobre el esquema a consultar y acceso a information_schema. No se requieren permisos de escritura."
+  }
+}

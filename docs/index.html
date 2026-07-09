@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es" data-lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conector MySQL / MariaDB — Guía de configuración | Ruvic</title>
+  <link rel="stylesheet" href="assets/ruvic.css">
+</head>
+<body>
+
+<header class="ruvic-header">
+  <div class="ruvic-header-inner">
+    <p class="ruvic-wordmark">Ruvic</p>
+
+    <h1>
+      <span class="lang-es">Conector MySQL / MariaDB — Guía de configuración</span>
+      <span class="lang-en">MySQL / MariaDB Connector — Setup Guide</span>
+    </h1>
+    <p class="subtitle">
+      <span class="lang-es">Conecta tu base de datos MySQL o MariaDB a Ruvic Engine para que el agente consulte tablas, datos y estadísticas en modo solo lectura.</span>
+      <span class="lang-en">Connect your MySQL or MariaDB database to Ruvic Engine so the agent can query tables, data and statistics in read-only mode.</span>
+    </p>
+
+    <div class="meta">
+      <span class="ruvic-badge">MySQL / MariaDB</span>
+      <span class="ruvic-badge">
+        <span class="lang-es">Solo lectura</span>
+        <span class="lang-en">Read-only</span>
+      </span>
+      <span class="ruvic-badge">v1.0.0</span>
+    </div>
+
+    <div class="lang-switch" role="group" aria-label="Idioma / Language">
+      <button type="button" data-set-lang="es" class="active">ES</button>
+      <button type="button" data-set-lang="en">EN</button>
+    </div>
+  </div>
+</header>
+
+<main class="ruvic-container">
+
+  <!-- ============ ÍNDICE ============ -->
+  <nav class="ruvic-toc" aria-label="Índice">
+    <h2><span class="lang-es">Contenido</span><span class="lang-en">Contents</span></h2>
+    <ol>
+      <li><a href="#que-es"><span class="lang-es">¿Qué es y para qué sirve?</span><span class="lang-en">What is it and what is it for?</span></a></li>
+      <li><a href="#prerrequisitos"><span class="lang-es">Prerrequisitos</span><span class="lang-en">Prerequisites</span></a></li>
+      <li><a href="#fabricante"><span class="lang-es">Configuración en el fabricante (paso a paso)</span><span class="lang-en">Vendor-side setup (step by step)</span></a></li>
+      <li><a href="#permisos"><span class="lang-es">Permisos requeridos</span><span class="lang-en">Required permissions</span></a></li>
+      <li><a href="#ruvic"><span class="lang-es">Configuración en Ruvic</span><span class="lang-en">Setup in Ruvic</span></a></li>
+      <li><a href="#verificacion"><span class="lang-es">Verificación</span><span class="lang-en">Verification</span></a></li>
+      <li><a href="#problemas"><span class="lang-es">Solución de problemas</span><span class="lang-en">Troubleshooting</span></a></li>
+      <li><a href="#faq"><span class="lang-es">Preguntas frecuentes y notas de seguridad</span><span class="lang-en">FAQ and security notes</span></a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ 1. QUÉ ES ============ -->
+  <section id="que-es">
+    <h2><span class="lang-es">1. ¿Qué es y para qué sirve?</span><span class="lang-en">1. What is it and what is it for?</span></h2>
+
+    <div class="lang-es">
+      <p>El conector MySQL / MariaDB permite que el agente de Ruvic acceda a tu base de datos <strong>en modo solo lectura</strong>: puede consultar información, pero nunca modificarla. Una vez configurado, puedes pedirle al agente cosas como:</p>
+      <ul>
+        <li>“Genera un reporte con las ventas del último trimestre y envíalo por correo.”</li>
+        <li>“¿Cuántos clientes nuevos se registraron esta semana?”</li>
+        <li>“Revisa por qué este query está lento y proponme mejoras.”</li>
+      </ul>
+      <p>Operaciones soportadas:</p>
+    </div>
+    <div class="lang-en">
+      <p>The MySQL / MariaDB connector lets the Ruvic agent access your database in <strong>read-only mode</strong>: it can query information but never modify it. Once configured, you can ask the agent things like:</p>
+      <ul>
+        <li>“Build a report with last quarter's sales and email it.”</li>
+        <li>“How many new customers signed up this week?”</li>
+        <li>“Check why this query is slow and suggest improvements.”</li>
+      </ul>
+      <p>Supported operations:</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th><span class="lang-es">Operación</span><span class="lang-en">Operation</span></th>
+          <th><span class="lang-es">Qué hace</span><span class="lang-en">What it does</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>db.list_tables</code></td>
+          <td><span class="lang-es">Lista las tablas de la base de datos con su cantidad de filas</span><span class="lang-en">Lists the database tables with their row counts</span></td>
+        </tr>
+        <tr>
+          <td><code>db.read</code></td>
+          <td><span class="lang-es">Lee los datos de una tabla (con límite de filas)</span><span class="lang-en">Reads data from a table (with a row limit)</span></td>
+        </tr>
+        <tr>
+          <td><code>db.stats</code></td>
+          <td><span class="lang-es">Estadísticas de una tabla: filas, tamaño, columnas y tipos</span><span class="lang-en">Table statistics: rows, size, columns and types</span></td>
+        </tr>
+        <tr>
+          <td><code>db.explain</code></td>
+          <td><span class="lang-es">Analiza el plan de ejecución de una consulta sin ejecutarla</span><span class="lang-en">Analyzes a query's execution plan without running it</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <span class="callout-title"><span class="lang-es">Solo lectura, por diseño</span><span class="lang-en">Read-only by design</span></span>
+      <span class="lang-es">El conector abre cada sesión con <code>SET SESSION TRANSACTION READ ONLY</code> y el usuario dedicado solo tiene permiso <code>SELECT</code>. Aunque el agente lo intentara, el servidor rechazaría cualquier escritura.</span>
+      <span class="lang-en">The connector opens every session with <code>SET SESSION TRANSACTION READ ONLY</code> and the dedicated user only has <code>SELECT</code>. Even if the agent tried, the server would reject any write.</span>
+    </div>
+  </section>
+
+  <!-- ============ 2. PRERREQUISITOS ============ -->
+  <section id="prerrequisitos">
+    <h2><span class="lang-es">2. Prerrequisitos</span><span class="lang-en">2. Prerequisites</span></h2>
+
+    <div class="lang-es">
+      <ul>
+        <li>Una base de datos <strong>MySQL 5.7+ / MariaDB 10.2+</strong> (en tu servidor, en la nube — RDS, Cloud SQL, Azure Database for MySQL — o en Docker).</li>
+        <li>Acceso administrativo a la base de datos (rol con permiso para crear usuarios), solo durante la configuración inicial.</li>
+        <li><strong>Acceso de red</strong> desde la plataforma Ruvic al servidor de base de datos (host y puerto alcanzables; regla de firewall o lista de IPs permitidas si aplica).</li>
+        <li>Los datos de conexión: host, puerto (por defecto <code>3306</code>) y nombre de la base de datos.</li>
+      </ul>
+    </div>
+    <div class="lang-en">
+      <ul>
+        <li>A <strong>MySQL 5.7+ / MariaDB 10.2+</strong> database (self-hosted, cloud — RDS, Cloud SQL, Azure Database for MySQL — or Docker).</li>
+        <li>Administrative access to the database (a role that can create users), only during initial setup.</li>
+        <li><strong>Network access</strong> from the Ruvic platform to the database server (reachable host and port; firewall rule or IP allow-list if applicable).</li>
+        <li>The connection details: host, port (default <code>3306</code>) and database name.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ 3. CONFIGURACIÓN EN EL FABRICANTE ============ -->
+  <section id="fabricante">
+    <h2><span class="lang-es">3. Configuración en el fabricante (paso a paso)</span><span class="lang-en">3. Vendor-side setup (step by step)</span></h2>
+
+    <div class="lang-es">
+      <p>Vas a crear un <strong>usuario dedicado de solo lectura</strong> para Ruvic. No uses un usuario administrador (<code>root</code>) ni el de tu aplicación: un usuario dedicado permite auditar la actividad del agente y limitar el acceso al mínimo.</p>
+    </div>
+    <div class="lang-en">
+      <p>You will create a <strong>dedicated read-only user</strong> for Ruvic. Do not reuse an admin user (<code>root</code>) or an application user: a dedicated user lets you audit the agent's activity and keep access to a minimum.</p>
+    </div>
+
+    <ol class="ruvic-steps">
+      <li>
+        <div class="lang-es">
+          <strong>Conéctate a la base de datos como administrador.</strong>
+          <p>Usa <code>mysql</code> u otra herramienta (MySQL Workbench, DBeaver, phpMyAdmin) con un rol administrador:</p>
+        </div>
+        <div class="lang-en">
+          <strong>Connect to the database as an administrator.</strong>
+          <p>Use <code>mysql</code> or another tool (MySQL Workbench, DBeaver, phpMyAdmin) with an admin role:</p>
+        </div>
+<pre><code>mysql -h TU_HOST -P 3306 -u root -p TU_BASE_DE_DATOS</code></pre>
+      </li>
+
+      <li>
+        <div class="lang-es">
+          <strong>Crea el usuario de solo lectura para Ruvic.</strong>
+          <p>Elige una contraseña fuerte (mínimo 16 caracteres, generada aleatoriamente) y guárdala: la usarás en el formulario de Ruvic (campo <em>Contraseña</em>). Reemplaza <code>%</code> por la IP de la plataforma Ruvic si tu servidor la conoce de antemano:</p>
+        </div>
+        <div class="lang-en">
+          <strong>Create the read-only user for Ruvic.</strong>
+          <p>Choose a strong password (16+ random characters) and save it: you will paste it into the Ruvic form (<em>Password</em> field). Replace <code>%</code> with the Ruvic platform IP if you know it in advance:</p>
+        </div>
+<pre><code>CREATE USER 'ruvic_reader'@'%' IDENTIFIED BY 'CAMBIA_ESTA_CONTRASEÑA';</code></pre>
+      </li>
+
+      <li>
+        <div class="lang-es">
+          <strong>Otorga los permisos de lectura.</strong>
+          <p>Sobre la base de datos que quieras exponer al agente:</p>
+        </div>
+        <div class="lang-en">
+          <strong>Grant read permissions.</strong>
+          <p>On the database you want to expose to the agent:</p>
+        </div>
+<pre><code>GRANT SELECT ON tu_base_de_datos.* TO 'ruvic_reader'@'%';
+FLUSH PRIVILEGES;</code></pre>
+        <div class="callout callout-info">
+          <span class="callout-title"><span class="lang-es">Nota</span><span class="lang-en">Note</span></span>
+          <span class="lang-es"><code>GRANT SELECT ON basededatos.*</code> aplica automáticamente a las tablas que se creen después, sin repetir el GRANT.</span>
+          <span class="lang-en"><code>GRANT SELECT ON database.*</code> automatically covers tables created afterwards, without re-running the GRANT.</span>
+        </div>
+      </li>
+
+      <li>
+        <div class="lang-es">
+          <strong>Habilita el acceso de red desde Ruvic.</strong>
+          <p>Si tu MySQL/MariaDB restringe conexiones por IP (habitual en producción), permite la IP de la plataforma Ruvic:</p>
+          <ul>
+            <li><strong>Servidor propio</strong>: crea el usuario con el host exacto en vez de <code>%</code> (ej. <code>CREATE USER 'ruvic_reader'@'IP_DE_RUVIC' ...</code>) y verifica que <code>bind-address</code> en <code>my.cnf</code> permita conexiones remotas.</li>
+            <li><strong>AWS RDS / Cloud SQL / Azure</strong>: agrega la IP en el security group o en la lista de redes autorizadas de la consola del proveedor.</li>
+          </ul>
+        </div>
+        <div class="lang-en">
+          <strong>Enable network access from Ruvic.</strong>
+          <p>If your MySQL/MariaDB restricts connections by IP (common in production), allow the Ruvic platform IP:</p>
+          <ul>
+            <li><strong>Self-hosted</strong>: create the user with the exact host instead of <code>%</code> (e.g. <code>CREATE USER 'ruvic_reader'@'RUVIC_IP' ...</code>) and make sure <code>bind-address</code> in <code>my.cnf</code> allows remote connections.</li>
+            <li><strong>AWS RDS / Cloud SQL / Azure</strong>: add the IP to the security group or authorized networks list in the provider console.</li>
+          </ul>
+        </div>
+        <div class="screenshot-placeholder">
+          <span class="lang-es">[ Captura: regla de firewall / security group con la IP de Ruvic — reemplazar por assets/img/mysql-firewall.png ]</span>
+          <span class="lang-en">[ Screenshot: firewall rule / security group with the Ruvic IP — replace with assets/img/mysql-firewall.png ]</span>
+        </div>
+      </li>
+
+      <li>
+        <div class="lang-es">
+          <strong>Verifica el usuario desde fuera del servidor.</strong>
+          <p>Desde una máquina distinta al servidor de BD (idealmente con salida de red similar a la de Ruvic):</p>
+        </div>
+        <div class="lang-en">
+          <strong>Verify the user from outside the server.</strong>
+          <p>From a machine other than the DB server (ideally with network egress similar to Ruvic's):</p>
+        </div>
+<pre><code>mysql -h TU_HOST -P 3306 -u ruvic_reader -p tu_base_de_datos -e "SELECT 1"</code></pre>
+        <div class="lang-es"><p>Si responde <code>1</code>, el fabricante quedó listo. Anota estos valores para la siguiente sección: host, puerto, base de datos, usuario y contraseña.</p></div>
+        <div class="lang-en"><p>If it returns <code>1</code>, the vendor side is ready. Write down these values for the next section: host, port, database, user and password.</p></div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ 4. PERMISOS ============ -->
+  <section id="permisos">
+    <h2><span class="lang-es">4. Permisos requeridos</span><span class="lang-en">4. Required permissions</span></h2>
+
+    <div class="lang-es">
+      <p>Principio de mínimo privilegio: el usuario de Ruvic solo necesita estos permisos. No otorgues <code>ALL PRIVILEGES</code>, roles de superusuario, escritura ni administración.</p>
+    </div>
+    <div class="lang-en">
+      <p>Least-privilege principle: the Ruvic user only needs these permissions. Do not grant <code>ALL PRIVILEGES</code>, superuser, write or admin roles.</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th><span class="lang-es">Permiso</span><span class="lang-en">Permission</span></th>
+          <th><span class="lang-es">Para qué lo usa el conector</span><span class="lang-en">Why the connector needs it</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>SELECT</code> <span class="lang-es">(sobre la base de datos a consultar)</span><span class="lang-en">(on the database to query)</span></td>
+          <td><span class="lang-es">Leer datos (<code>db.read</code>), contar filas y calcular estadísticas (<code>db.stats</code>), planificar consultas (<code>db.explain</code>)</span><span class="lang-en">Read data (<code>db.read</code>), count rows and compute statistics (<code>db.stats</code>), plan queries (<code>db.explain</code>)</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="lang-es"><p>Las vistas de catálogo que usa el conector (<code>information_schema.tables</code>, <code>information_schema.columns</code>) están disponibles para cualquier usuario autenticado sobre sus objetos visibles; no requieren permisos adicionales.</p></div>
+    <div class="lang-en"><p>The catalog views the connector uses (<code>information_schema.tables</code>, <code>information_schema.columns</code>) are available to any authenticated user over their visible objects; no extra permissions required.</p></div>
+  </section>
+
+  <!-- ============ 5. CONFIGURACIÓN EN RUVIC ============ -->
+  <section id="ruvic">
+    <h2><span class="lang-es">5. Configuración en Ruvic</span><span class="lang-en">5. Setup in Ruvic</span></h2>
+
+    <div class="lang-es">
+      <p>Entra a <strong>Settings → Conectores</strong>, busca la tarjeta <strong>MySQL / MariaDB</strong> y pulsa <strong>Configurar</strong>. Diligencia el formulario con los valores que obtuviste en la sección 3:</p>
+    </div>
+    <div class="lang-en">
+      <p>Go to <strong>Settings → Connectors</strong>, find the <strong>MySQL / MariaDB</strong> card and click <strong>Configure</strong>. Fill in the form with the values from section 3:</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th><span class="lang-es">Campo del formulario</span><span class="lang-en">Form field</span></th>
+          <th><span class="lang-es">Valor (obtenido en la sección 3)</span><span class="lang-en">Value (from section 3)</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="lang-es">Host</span><span class="lang-en">Host</span></td>
+          <td><span class="lang-es">Hostname o IP del servidor (ej. <code>db.empresa.com</code>)</span><span class="lang-en">Server hostname or IP (e.g. <code>db.company.com</code>)</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">Puerto</span><span class="lang-en">Port</span></td>
+          <td><code>3306</code> <span class="lang-es">(salvo configuración distinta)</span><span class="lang-en">(unless configured otherwise)</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">Base de datos</span><span class="lang-en">Database</span></td>
+          <td><span class="lang-es">Nombre de la base de datos a consultar</span><span class="lang-en">Name of the database to query</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">Usuario</span><span class="lang-en">Username</span></td>
+          <td><code>ruvic_reader</code></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">Contraseña</span><span class="lang-en">Password</span></td>
+          <td><span class="lang-es">La contraseña del paso 2. Se guarda cifrada como secreto: la interfaz no volverá a mostrarla</span><span class="lang-en">The password from step 2. Stored as a secret: the UI will never display it again</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">Timeout de conexión</span><span class="lang-en">Connection timeout</span></td>
+          <td><span class="lang-es">Opcional; <code>10</code> segundos por defecto</span><span class="lang-en">Optional; defaults to <code>10</code> seconds</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="lang-es"><p>Guarda y pulsa <span class="ruvic-button">Probar conexión</span> — la plataforma se conectará a tu base de datos y confirmará que las credenciales y la red funcionan.</p></div>
+    <div class="lang-en"><p>Save and click <span class="ruvic-button">Test connection</span> — the platform will connect to your database and confirm credentials and networking work.</p></div>
+
+    <div class="screenshot-placeholder">
+      <span class="lang-es">[ Captura: formulario del conector MySQL / MariaDB en Settings → Conectores — reemplazar por assets/img/mysql-form.png ]</span>
+      <span class="lang-en">[ Screenshot: MySQL / MariaDB connector form in Settings → Connectors — replace with assets/img/mysql-form.png ]</span>
+    </div>
+  </section>
+
+  <!-- ============ 6. VERIFICACIÓN ============ -->
+  <section id="verificacion">
+    <h2><span class="lang-es">6. Verificación</span><span class="lang-en">6. Verification</span></h2>
+
+    <ol class="ruvic-steps">
+      <li>
+        <div class="lang-es"><strong>Test de conexión exitoso.</strong><p>El botón <em>Probar conexión</em> debe responder: <em>“Conexión exitosa a tu-host:3306/tu_base”</em>. La tarjeta del conector cambia a estado <strong>Configurado</strong>.</p></div>
+        <div class="lang-en"><strong>Successful connection test.</strong><p>The <em>Test connection</em> button should return: <em>“Successful connection to your-host:3306/your_db”</em>. The connector card switches to <strong>Configured</strong>.</p></div>
+      </li>
+      <li>
+        <div class="lang-es"><strong>Automatización mínima de prueba.</strong><p>Abre una conversación nueva con el agente y pídele:</p><blockquote><em>“Lista las tablas de la base de datos MySQL y dime cuántas filas tiene cada una.”</em></blockquote><p>El agente debe responder con el listado real de tus tablas. Si lo hace, el conector quedó operativo de punta a punta.</p></div>
+        <div class="lang-en"><strong>Minimal test automation.</strong><p>Open a new conversation with the agent and ask:</p><blockquote><em>“List the tables in the MySQL database and tell me how many rows each one has.”</em></blockquote><p>The agent should reply with your actual table list. If it does, the connector is fully operational.</p></div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ 7. SOLUCIÓN DE PROBLEMAS ============ -->
+  <section id="problemas">
+    <h2><span class="lang-es">7. Solución de problemas</span><span class="lang-en">7. Troubleshooting</span></h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th><span class="lang-es">Mensaje / síntoma</span><span class="lang-en">Message / symptom</span></th>
+          <th><span class="lang-es">Causa probable y solución</span><span class="lang-en">Likely cause and fix</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="lang-es">“Autenticación fallida: usuario o contraseña inválidos”</span><span class="lang-en">“Authentication failed: invalid user or password”</span></td>
+          <td><span class="lang-es">Contraseña mal copiada o usuario inexistente. Reintenta el paso 2 de la sección 3 y vuelve a guardar el formulario (deja la contraseña vacía para conservar la anterior o escribe la nueva para reemplazarla).</span><span class="lang-en">Mistyped password or missing user. Redo step 2 of section 3 and re-save the form (leave the password empty to keep the previous one or type the new one to replace it).</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">“No se pudo conectar … (timeout)”</span><span class="lang-en">“Could not connect … (timeout)”</span></td>
+          <td><span class="lang-es">La plataforma no alcanza el host/puerto. Revisa el paso 4 (firewall / security group / <code>bind-address</code>) y que el host no sea <code>localhost</code> (debe ser accesible desde Ruvic, no desde tu equipo).</span><span class="lang-en">The platform cannot reach the host/port. Review step 4 (firewall / security group / <code>bind-address</code>) and make sure the host is not <code>localhost</code> (it must be reachable from Ruvic, not from your laptop).</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">“La base de datos 'X' no existe”</span><span class="lang-en">“Database 'X' does not exist”</span></td>
+          <td><span class="lang-es">Nombre de base de datos mal escrito en el formulario. Verifica con <code>SHOW DATABASES;</code> en mysql.</span><span class="lang-en">Database name mistyped in the form. Check with <code>SHOW DATABASES;</code> in mysql.</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">El agente ve las tablas pero “permission denied” al leer una</span><span class="lang-en">The agent lists tables but gets “permission denied” reading one</span></td>
+          <td><span class="lang-es">Falta el <code>GRANT SELECT</code> sobre esa base de datos o el usuario se creó con un host distinto al que realmente conecta (ej. <code>'ruvic_reader'@'127.0.0.1'</code> en vez de <code>'%'</code>). Repite el paso 3 de la sección 3.</span><span class="lang-en">Missing <code>GRANT SELECT</code> on that database, or the user was created with a different host than the one actually connecting (e.g. <code>'ruvic_reader'@'127.0.0.1'</code> instead of <code>'%'</code>). Redo step 3 of section 3.</span></td>
+        </tr>
+        <tr>
+          <td><span class="lang-es">El conector aparece “Sin configurar” tras guardar</span><span class="lang-en">Connector shows “Not configured” after saving</span></td>
+          <td><span class="lang-es">Algún campo obligatorio quedó vacío. Ábrelo de nuevo y completa host, puerto, base de datos, usuario y contraseña.</span><span class="lang-en">A required field was left empty. Open it again and fill in host, port, database, user and password.</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ 8. FAQ Y SEGURIDAD ============ -->
+  <section id="faq">
+    <h2><span class="lang-es">8. Preguntas frecuentes y notas de seguridad</span><span class="lang-en">8. FAQ and security notes</span></h2>
+
+    <h3><span class="lang-es">¿El agente puede modificar o borrar datos?</span><span class="lang-en">Can the agent modify or delete data?</span></h3>
+    <div class="lang-es"><p>No. El conector abre cada sesión en modo <code>READ ONLY</code> y el usuario <code>ruvic_reader</code> solo tiene permiso <code>SELECT</code>. Hay dos barreras independientes.</p></div>
+    <div class="lang-en"><p>No. The connector opens every session in <code>READ ONLY</code> mode and the <code>ruvic_reader</code> user only has <code>SELECT</code>. Two independent safeguards.</p></div>
+
+    <h3><span class="lang-es">¿Dónde queda guardada la contraseña?</span><span class="lang-en">Where is the password stored?</span></h3>
+    <div class="lang-es"><p>Como secreto en el almacén de credenciales de la plataforma, asociado a tu usuario. La interfaz nunca vuelve a mostrarla; solo indica “definida”. Para cambiarla, escribe una nueva en el formulario; para conservarla al editar otros campos, deja el campo vacío.</p></div>
+    <div class="lang-en"><p>As a secret in the platform's credential store, tied to your user. The UI never displays it again; it only shows “set”. To change it, type a new one in the form; to keep it while editing other fields, leave the field empty.</p></div>
+
+    <h3><span class="lang-es">Rotación de credenciales</span><span class="lang-en">Credential rotation</span></h3>
+    <div class="lang-es"><p>Recomendado cada 90 días o según tu política: cambia la contraseña en MySQL/MariaDB (<code>ALTER USER 'ruvic_reader'@'%' IDENTIFIED BY '...';</code>), actualízala en el formulario del conector y pulsa <em>Probar conexión</em>.</p></div>
+    <div class="lang-en"><p>Recommended every 90 days or per your policy: change the password in MySQL/MariaDB (<code>ALTER USER 'ruvic_reader'@'%' IDENTIFIED BY '...';</code>), update it in the connector form and click <em>Test connection</em>.</p></div>
+
+    <h3><span class="lang-es">¿Qué hago si la contraseña se compromete?</span><span class="lang-en">What if the password is compromised?</span></h3>
+    <div class="lang-es"><ol><li>Cambia la contraseña en MySQL/MariaDB de inmediato (<code>ALTER USER ... IDENTIFIED BY ...</code>) o bloquea el usuario (<code>ALTER USER 'ruvic_reader'@'%' ACCOUNT LOCK;</code>).</li><li>Revisa la actividad reciente del usuario en los logs del servidor.</li><li>Actualiza la nueva contraseña en el formulario del conector.</li></ol></div>
+    <div class="lang-en"><ol><li>Change the password in MySQL/MariaDB immediately (<code>ALTER USER ... IDENTIFIED BY ...</code>) or lock the user (<code>ALTER USER 'ruvic_reader'@'%' ACCOUNT LOCK;</code>).</li><li>Review the user's recent activity in the server logs.</li><li>Update the new password in the connector form.</li></ol></div>
+
+    <h3><span class="lang-es">¿Expiran las credenciales?</span><span class="lang-en">Do the credentials expire?</span></h3>
+    <div class="lang-es"><p>Por defecto no (usuario/contraseña de MySQL/MariaDB no caducan solos). Si tu política exige expiración, configúrala con <code>PASSWORD EXPIRE INTERVAL N DAY</code> al crear o alterar el usuario y programa la rotación antes de esa fecha.</p></div>
+    <div class="lang-en"><p>By default no (MySQL/MariaDB user/password does not expire on its own). If your policy requires expiration, set it with <code>PASSWORD EXPIRE INTERVAL N DAY</code> when creating or altering the user and schedule rotation before that date.</p></div>
+
+    <div class="callout callout-warning">
+      <span class="callout-title"><span class="lang-es">Buenas prácticas</span><span class="lang-en">Best practices</span></span>
+      <span class="lang-es">Usa siempre un usuario dedicado y de solo lectura; restringe el acceso por IP en vez de <code>'%'</code> cuando sea posible; no expongas bases de datos con datos sensibles que el agente no necesite; y evita compartir la contraseña por canales no seguros.</span>
+      <span class="lang-en">Always use a dedicated read-only user; restrict access by IP instead of <code>'%'</code> when possible; do not expose databases with sensitive data the agent doesn't need; and never share the password over insecure channels.</span>
+    </div>
+  </section>
+
+</main>
+
+<footer class="ruvic-footer">
+  <div class="tagline">Opera, factura, escala — aunque tu equipo no esté</div>
+  <div>Ruvic Engine · @ruvic_ai</div>
+</footer>
+
+<script>
+  // Toggle de idioma ES/EN — parte de la plantilla, no modificar.
+  (function () {
+    var buttons = document.querySelectorAll("[data-set-lang]");
+    function setLang(lang) {
+      document.documentElement.setAttribute("data-lang", lang);
+      document.documentElement.setAttribute("lang", lang);
+      buttons.forEach(function (btn) {
+        btn.classList.toggle("active", btn.getAttribute("data-set-lang") === lang);
+      });
+      try { localStorage.setItem("ruvic-docs-lang", lang); } catch (e) {}
+    }
+    buttons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setLang(btn.getAttribute("data-set-lang"));
+      });
+    });
+    try {
+      var saved = localStorage.getItem("ruvic-docs-lang");
+      if (saved === "en" || saved === "es") setLang(saved);
+    } catch (e) {}
+  })();
+</script>
+
+</body>
+</html>
