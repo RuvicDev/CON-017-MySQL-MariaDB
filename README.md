@@ -7,7 +7,7 @@ ejecución de un query sin ejecutarlo.
 ## Instalación
 
 ```bash
-pip install git+https://github.com/Dgirto/conector-mysql.git#subdirectory=lib
+pip install git+https://github.com/Dgirto/MySQL-MariaDB.git#subdirectory=lib
 ```
 
 Python 3.10+. Dependencia única: `mysql-connector-python>=8.0,<9.0`.

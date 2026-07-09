@@ -17,7 +17,7 @@ triggers:
 
 # Conector MySQL / MariaDB (ruvic_mysql_connector)
 
-Librería Python de solo lectura para MySQL y MariaDB. Está **preinstalada en el runtime** cuando el conector está configurado (si no, instálala con `pip install git+https://github.com/Dgirto/conector-mysql.git#subdirectory=lib`).
+Librería Python de solo lectura para MySQL y MariaDB. Está **preinstalada en el runtime** cuando el conector está configurado (si no, instálala con `pip install git+https://github.com/Dgirto/MySQL-MariaDB.git#subdirectory=lib`).
 
 ## Regla crítica de credenciales
 

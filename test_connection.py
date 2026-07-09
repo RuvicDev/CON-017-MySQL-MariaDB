@@ -25,7 +25,7 @@ def test_connection() -> tuple[bool, str]:
             False,
             "La librería ruvic-mysql-connector no está instalada. "
             "Instala con: pip install git+https://github.com/Dgirto/"
-            "conector-mysql.git#subdirectory=lib",
+            "MySQL-MariaDB.git#subdirectory=lib",
         )
 
     try:

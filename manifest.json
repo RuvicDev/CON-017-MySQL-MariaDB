@@ -6,7 +6,7 @@
   "category": "database",
   "library": {
     "package": "ruvic-mysql-connector",
-    "install": "pip install git+https://github.com/Dgirto/conector-mysql.git#subdirectory=lib",
+    "install": "pip install git+https://github.com/Dgirto/MySQL-MariaDB.git#subdirectory=lib",
     "import_name": "ruvic_mysql_connector"
   },
   "auth_modes": [
